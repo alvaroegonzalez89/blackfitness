@@ -116,16 +116,18 @@
   .main{
     margin-left:220px; flex:1; padding:26px 30px 60px; max-width:1200px; width:100%;
     position:relative; overflow:hidden;
-    background:
-      radial-gradient(circle at 6% 2%, rgba(245,197,24,.20), transparent 38%),
-      radial-gradient(circle at 98% 98%, rgba(245,197,24,.16), transparent 46%),
-      var(--negro);
+    background:var(--negro);
   }
   .main::before{
     content:'';
-    position:absolute; right:-2vw; bottom:-4vh; width:58vw; height:58vw; max-width:760px; max-height:760px;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cg fill='%23F5C518' opacity='0.35'%3E%3Crect x='20' y='88' width='160' height='24' rx='4'/%3E%3Crect x='6' y='60' width='16' height='80' rx='4'/%3E%3Crect x='-6' y='72' width='16' height='56' rx='4'/%3E%3Crect x='178' y='60' width='16' height='80' rx='4'/%3E%3Crect x='190' y='72' width='16' height='56' rx='4'/%3E%3C/g%3E%3C/svg%3E");
-    background-repeat:no-repeat; background-size:contain; pointer-events:none; z-index:0;
+    position:absolute; inset:0;
+    background-image:
+      linear-gradient(180deg, rgba(10,10,10,.90), rgba(10,10,10,.80) 40%, rgba(10,10,10,.95)),
+      linear-gradient(100deg, rgba(10,10,10,.75), rgba(10,10,10,.35) 55%, rgba(10,10,10,.75)),
+      url("https://images.unsplash.com/photo-1521805103424-d8f8430e8933?fm=jpg&q=70&w=1800&auto=format&fit=crop");
+    background-size:cover; background-position:center 30%;
+    filter:grayscale(35%);
+    pointer-events:none; z-index:0;
   }
   .main > *{position:relative; z-index:1;}
   .topbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:26px; flex-wrap:wrap; gap:14px;}
@@ -440,14 +442,14 @@ document.getElementById('logoSidebar').src = LOGO_BLACKS_B64;
       y pegar el UID que te genera en BLACKS_UID de abajo.
    ===================================================================== */
 const firebaseConfig = {
-  apiKey: "AIzaSyBJmmRh347yN3YxVs-uSque7qXQpK5AzwQ",
-  authDomain: "appsur-2ffb3.firebaseapp.com",
-  projectId: "appsur-2ffb3",
-  storageBucket: "appsur-2ffb3.firebasestorage.app",
-  messagingSenderId: "392648391903",
-  appId: "1:392648391903:web:c99938ad620b1a62457d6a"
+  apiKey: "AIzaSyAQrZzmEW_gs65Ta5nepAYp2a-1IOOlIwg",
+  authDomain: "blacksfitness-7ac21.firebaseapp.com",
+  projectId: "blacksfitness-7ac21",
+  storageBucket: "blacksfitness-7ac21.firebasestorage.app",
+  messagingSenderId: "39005359298",
+  appId: "1:39005359298:web:bfdaac5f0ae69bd6febf5b"
 };
-const BLACKS_UID = "cIDkuAjcOLWQxt3jJcZs9gId2Ag1";
+const BLACKS_UID = "5r278nhItmVQzF1aNzI24X13NXO2";
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
