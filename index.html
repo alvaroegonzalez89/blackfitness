@@ -76,6 +76,12 @@
     box-shadow:0 10px 40px rgba(245,197,24,.18);
     filter:contrast(1.35) brightness(1.2);
   }
+  .wordmark-login{
+    font-family:'Bebas Neue',sans-serif; letter-spacing:2px; text-transform:uppercase;
+    font-size:clamp(28px,7vw,48px); color:var(--blanco); margin-top:16px;
+    opacity:0; animation:fadein .5s .55s forwards;
+  }
+  .wordmark-login .amarillo{color:var(--amarillo);}
   @keyframes logoin{from{opacity:0; transform:scale(.7) rotate(-8deg);} to{opacity:1; transform:scale(1) rotate(0);}}
   .wordmark{
     font-size:clamp(42px, 11vw, 96px); line-height:.92; color:var(--blanco);
@@ -211,6 +217,7 @@
   <div class="stripe stripe1"></div>
   <div class="stripe stripe2"></div>
   <img class="logo-img" id="logoLogin" src="" alt="Black's Fitness">
+  <div class="wordmark-login">BLACK'S <span class="amarillo">FITNESS</span></div>
   <div class="barra-carga"></div>
   <div class="subtitulo">Panel de gestión · Vélez Sarsfield 1735</div>
   <div class="login-box">
