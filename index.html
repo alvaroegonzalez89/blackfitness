@@ -74,6 +74,7 @@
     width:clamp(120px,32vw,220px); height:auto; border-radius:50%;
     opacity:0; animation:logoin .6s cubic-bezier(.2,.9,.25,1.3) .1s forwards;
     box-shadow:0 10px 40px rgba(245,197,24,.18);
+    filter:contrast(1.35) brightness(1.2);
   }
   @keyframes logoin{from{opacity:0; transform:scale(.7) rotate(-8deg);} to{opacity:1; transform:scale(1) rotate(0);}}
   .wordmark{
@@ -106,7 +107,7 @@
     transition:transform .25s ease;
   }
   .sidebar .logo{font-size:22px; padding:0 10px 22px; letter-spacing:.5px; display:flex; align-items:center; gap:10px;}
-  .sidebar .logo img{width:36px; height:36px; border-radius:50%;}
+  .sidebar .logo img{width:48px; height:48px; border-radius:50%; filter:contrast(1.35) brightness(1.2); border:1px solid #2a2a2a;}
   .sidebar .logo .amarillo{color:var(--amarillo);}
   .navitem{display:flex; align-items:center; gap:10px; padding:12px 12px; border-radius:10px; color:var(--gris-txt); font-weight:600; font-size:14px; transition:.15s; cursor:pointer;}
   .navitem:hover{background:var(--gris); color:var(--blanco);}
@@ -237,7 +238,8 @@
     <div class="navitem" data-vista="socios" onclick="irA('socios')">🧑‍🤝‍🧑 Socios</div>
     <div class="navitem" data-vista="cuotas" onclick="irA('cuotas')">💳 Cuotas</div>
     <div class="navitem" data-vista="horarios" onclick="irA('horarios')">🗓️ Horarios</div>
-    <div class="navitem" data-vista="prospectos" onclick="irA('prospectos')">📥 Prospectos</div>
+    <div class="navitem" data-vista="planes" onclick="irA('planes')">🏷️ Planes</div>
+    <div class="navitem" data-vista="prospectos" onclick="irA('prospectos')">📝 Inscripciones</div>
     <div class="navitem" data-vista="configuracion" onclick="irA('configuracion')">⚙️ Configuración</div>
     <div class="cerrar-sesion" onclick="cerrarSesion()">Cerrar sesión →</div>
   </div>
@@ -299,14 +301,23 @@
       <div class="grid" style="grid-template-columns:repeat(7,1fr); gap:10px;" id="grillaHorarios"></div>
     </section>
 
-    <!-- PROSPECTOS -->
+    <!-- PLANES -->
+    <section id="pantalla-planes" class="pantalla hidden">
+      <div class="topbar"><h1>Planes</h1><button class="btn btn-primary" onclick="abrirModalPlan()">+ Nuevo plan</button></div>
+      <div class="card">
+        <table><thead><tr><th>Nombre</th><th>Monto mensual</th><th>Frecuencia</th><th>Acciones</th></tr></thead>
+        <tbody id="tablaPlanes"></tbody></table>
+      </div>
+    </section>
+
+    <!-- INSCRIPCIONES (ex Prospectos) -->
     <section id="pantalla-prospectos" class="pantalla hidden">
       <div class="topbar">
-        <h1>Prospectos</h1>
+        <h1>Inscripciones</h1>
         <button class="btn btn-ghost" onclick="copiarLinkInscripcion()">🔗 Copiar link de inscripción</button>
       </div>
       <div class="card">
-        <table><thead><tr><th>Nombre</th><th>Teléfono</th><th>Interés</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <table><thead><tr><th>Nombre</th><th>Teléfono</th><th>Actividad</th><th>Plan de interés</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead>
         <tbody id="tablaProspectos"></tbody></table>
       </div>
     </section>
@@ -349,6 +360,17 @@
     <div class="field"><label>Nombre y apellido</label><input id="inscNombre"></div>
     <div class="field"><label>Teléfono (WhatsApp)</label><input id="inscTelefono" placeholder="260 468 1584"></div>
     <div class="field"><label>Plan de interés</label><input id="inscPlan" disabled></div>
+    <div class="field"><label>¿Qué actividad querés hacer?</label>
+      <select id="inscActividad">
+        <option value="">Elegí una actividad</option>
+        <option value="Sala de musculación">Sala de musculación</option>
+        <option value="Entrenamiento funcional">Entrenamiento funcional</option>
+        <option value="Entrenamiento específico">Entrenamiento específico</option>
+        <option value="Rehabilitación">Rehabilitación</option>
+        <option value="Rutinas personalizadas">Rutinas personalizadas</option>
+        <option value="Zumba">Zumba</option>
+      </select>
+    </div>
     <button class="btn btn-primary" style="width:100%" onclick="enviarInscripcion()">Enviar inscripción</button>
   </div>
   <div class="ok-insc hidden" id="okInscripcion">
@@ -368,13 +390,7 @@
     <div class="field"><label>DNI</label><input id="socioDni"></div>
     <div class="field"><label>Teléfono</label><input id="socioTelefono" placeholder="260 468 1584"></div>
     <div class="field"><label>Plan</label>
-      <select id="socioPlan" onchange="autocompletarMontoPlan()">
-        <option value="Plan Base">Plan Base — $45.000 (2-3 veces/sem)</option>
-        <option value="Plan Pro">Plan Pro — $50.000 (4-5 veces/sem)</option>
-        <option value="Plan Específico Base">Plan Específico Base — $47.000 (2-3 veces/sem)</option>
-        <option value="Plan Específico Pro">Plan Específico Pro — $52.000 (4-5 veces/sem)</option>
-        <option value="Entrenamiento Funcional">Entrenamiento Funcional — $45.000 (2-3 veces/sem)</option>
-      </select>
+      <select id="socioPlan" onchange="autocompletarMontoPlan()"></select>
     </div>
     <div class="field"><label>Monto mensual</label><input type="number" id="socioMonto" value="45000"></div>
     <div class="field"><label>Día de inicio</label><input type="date" id="socioInicio"></div>
@@ -382,6 +398,18 @@
       <select id="socioEstado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select>
     </div>
     <button class="btn btn-primary" style="width:100%" onclick="guardarSocio()">Guardar</button>
+  </div>
+</div>
+
+<div id="modalPlan" class="modal-bg hidden">
+  <div class="modal">
+    <span class="modal-close" onclick="cerrarModal('modalPlan')">✕</span>
+    <h2 id="tituloModalPlan">Nuevo plan</h2>
+    <input type="hidden" id="planId">
+    <div class="field"><label>Nombre del plan</label><input id="planNombre" placeholder="Ej: Plan Base"></div>
+    <div class="field"><label>Monto mensual</label><input type="number" id="planMonto" placeholder="45000"></div>
+    <div class="field"><label>Frecuencia</label><input id="planFrecuencia" placeholder="Ej: 2 a 3 veces por semana"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="guardarPlan()">Guardar</button>
   </div>
 </div>
 
@@ -471,7 +499,7 @@ const GYM = {
   titular: "Roberto Maciel Carrizo"
 };
 
-const PLANES = [
+const PLANES_DEFAULT = [
   {nombre:"Plan Base", monto:45000, frecuencia:"2 a 3 veces por semana"},
   {nombre:"Plan Pro", monto:50000, frecuencia:"4 a 5 veces por semana"},
   {nombre:"Plan Específico Base", monto:47000, frecuencia:"2 a 3 veces por semana"},
@@ -488,6 +516,7 @@ let cacheSocios = [];
 let cachePagos = [];
 let cacheHorarios = [];
 let cacheProspectos = [];
+let cachePlanes = [];
 let listenersActivos = [];
 
 /* =====================================================================
@@ -592,7 +621,21 @@ function cargarDatosApp(){
     cacheProspectos = snap.docs.map(d=>({id:d.id, ...d.data()}));
     renderProspectos(); renderDashboard();
   });
-  listenersActivos = [u1,u2,u3,u4];
+  const u5 = db.collection('planes_blacks').where('uid','==',uid).onSnapshot(snap=>{
+    cachePlanes = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    if(cachePlanes.length === 0){
+      // primera vez: sembramos los planes por defecto una sola vez
+      const batch = db.batch();
+      PLANES_DEFAULT.forEach(p=>{
+        const ref = db.collection('planes_blacks').doc();
+        batch.set(ref, {...p, uid});
+      });
+      batch.commit().catch(e=> toast("No se pudieron crear los planes iniciales: "+e.message, "err"));
+      return; // el propio commit va a disparar este mismo onSnapshot de nuevo, ya con datos
+    }
+    renderPlanes(); poblarSelectPlanesSocio();
+  });
+  listenersActivos = [u1,u2,u3,u4,u5];
 
   // config
   db.collection('configuracion_blacks').where('uid','==',uid).limit(1).get().then(snap=>{
@@ -669,16 +712,24 @@ function renderSocios(){
   `).join('') || `<tr><td colspan="6" style="color:var(--gris-txt)">No hay socios que coincidan.</td></tr>`;
 }
 
+function poblarSelectPlanesSocio(){
+  const sel = document.getElementById('socioPlan');
+  const valorPrevio = sel.value;
+  sel.innerHTML = cachePlanes.map(p=>
+    `<option value="${p.nombre}">${p.nombre} — ${formatoMoneda(p.monto)} (${p.frecuencia})</option>`
+  ).join('');
+  if(valorPrevio && cachePlanes.some(p=>p.nombre===valorPrevio)) sel.value = valorPrevio;
+}
 function abrirModalSocio(){
   document.getElementById('tituloModalSocio').textContent = "Nuevo socio";
   document.getElementById('socioId').value = "";
   document.getElementById('socioNombre').value = "";
   document.getElementById('socioDni').value = "";
   document.getElementById('socioTelefono').value = "";
-  document.getElementById('socioPlan').value = "Plan Base";
-  document.getElementById('socioMonto').value = 45000;
+  poblarSelectPlanesSocio();
   document.getElementById('socioInicio').value = new Date().toISOString().slice(0,10);
   document.getElementById('socioEstado').value = "activo";
+  autocompletarMontoPlan();
   document.getElementById('modalSocio').classList.remove('hidden');
 }
 function editarSocio(id){
@@ -689,6 +740,7 @@ function editarSocio(id){
   document.getElementById('socioNombre').value = s.nombre;
   document.getElementById('socioDni').value = s.dni||'';
   document.getElementById('socioTelefono').value = s.telefono||'';
+  poblarSelectPlanesSocio();
   document.getElementById('socioPlan').value = s.plan;
   document.getElementById('socioMonto').value = s.monto;
   document.getElementById('socioInicio').value = s.diaInicio||'';
@@ -697,7 +749,7 @@ function editarSocio(id){
 }
 function autocompletarMontoPlan(){
   const nombrePlan = document.getElementById('socioPlan').value;
-  const plan = PLANES.find(p=>p.nombre===nombrePlan);
+  const plan = cachePlanes.find(p=>p.nombre===nombrePlan);
   if(plan) document.getElementById('socioMonto').value = plan.monto;
 }
 function guardarSocio(){
@@ -881,6 +933,63 @@ function eliminarHorario(id){
 }
 
 /* =====================================================================
+   PLANES
+   ===================================================================== */
+function renderPlanes(){
+  const lista = [...cachePlanes].sort((a,b)=> (a.monto||0) - (b.monto||0));
+  document.getElementById('tablaPlanes').innerHTML = lista.map(p=>`
+    <tr>
+      <td>${p.nombre}</td>
+      <td class="mono">${formatoMoneda(p.monto)}</td>
+      <td>${p.frecuencia||'-'}</td>
+      <td class="acciones">
+        <button class="btn btn-ghost btn-sm" onclick="editarPlan('${p.id}')">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="eliminarPlan('${p.id}')">Eliminar</button>
+      </td>
+    </tr>
+  `).join('') || `<tr><td colspan="4" style="color:var(--gris-txt)">Todavía no hay planes cargados.</td></tr>`;
+}
+function abrirModalPlan(){
+  document.getElementById('tituloModalPlan').textContent = "Nuevo plan";
+  document.getElementById('planId').value = "";
+  document.getElementById('planNombre').value = "";
+  document.getElementById('planMonto').value = "";
+  document.getElementById('planFrecuencia').value = "";
+  document.getElementById('modalPlan').classList.remove('hidden');
+}
+function editarPlan(id){
+  const p = cachePlanes.find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('tituloModalPlan').textContent = "Editar plan";
+  document.getElementById('planId').value = p.id;
+  document.getElementById('planNombre').value = p.nombre;
+  document.getElementById('planMonto').value = p.monto;
+  document.getElementById('planFrecuencia').value = p.frecuencia||'';
+  document.getElementById('modalPlan').classList.remove('hidden');
+}
+function guardarPlan(){
+  const id = document.getElementById('planId').value;
+  const nombre = document.getElementById('planNombre').value.trim();
+  const monto = Number(document.getElementById('planMonto').value);
+  if(!nombre || !monto){ toast("Completá nombre y monto del plan","err"); return; }
+  const data = {
+    nombre,
+    monto,
+    frecuencia: document.getElementById('planFrecuencia').value.trim(),
+    uid: auth.currentUser.uid
+  };
+  const ref = id ? db.collection('planes_blacks').doc(id) : db.collection('planes_blacks').doc();
+  ref.set(data, {merge:true}).then(()=>{
+    toast("Plan guardado", "ok");
+    cerrarModal('modalPlan');
+  }).catch(e=> toast("Error al guardar: "+e.message, "err"));
+}
+function eliminarPlan(id){
+  if(!confirm("¿Eliminar este plan? Los socios que ya lo tengan asignado no se ven afectados, pero no va a aparecer más como opción.")) return;
+  db.collection('planes_blacks').doc(id).delete().then(()=> toast("Plan eliminado","ok"));
+}
+
+/* =====================================================================
    PROSPECTOS
    ===================================================================== */
 function renderProspectos(){
@@ -890,7 +999,8 @@ function renderProspectos(){
     return `<tr>
       <td>${p.nombre}</td>
       <td>${p.telefono}</td>
-      <td>${p.actividadInteres||'-'}</td>
+      <td>${p.actividad||'-'}</td>
+      <td>${p.plan||'-'}</td>
       <td>${fecha}</td>
       <td><span class="badge ${p.contactado?'badge-ok':'badge-warn'}">${p.contactado?'Contactado':'Nuevo'}</span></td>
       <td class="acciones">
@@ -898,11 +1008,11 @@ function renderProspectos(){
         <button class="btn btn-primary btn-sm" onclick="convertirEnSocio('${p.id}')">→ Pasar a socio</button>
       </td>
     </tr>`;
-  }).join('') || `<tr><td colspan="6" style="color:var(--gris-txt)">Todavía no hay prospectos.</td></tr>`;
+  }).join('') || `<tr><td colspan="7" style="color:var(--gris-txt)">Todavía no hay inscripciones.</td></tr>`;
 }
 function contactarProspecto(id){
   const p = cacheProspectos.find(x=>x.id===id);
-  const msg = `¡Hola ${p.nombre.split(' ')[0]}! 👋 Te escribimos de ${GYM.nombre}, vimos que te interesó ${p.actividadInteres||'entrenar con nosotros'}. ¿Querés que te contemos los horarios y planes disponibles?`;
+  const msg = `¡Hola ${p.nombre.split(' ')[0]}! 👋 Te escribimos de ${GYM.nombre}, vimos que te interesó ${p.actividad||'entrenar con nosotros'}. ¿Querés que te contemos los horarios y planes disponibles?`;
   abrirWhatsapp(p.telefono, msg);
   db.collection('prospectos_blacks').doc(id).update({contactado:true});
 }
@@ -913,10 +1023,11 @@ function convertirEnSocio(id){
   document.getElementById('socioNombre').value = p.nombre;
   document.getElementById('socioTelefono').value = p.telefono;
   document.getElementById('socioDni').value = "";
-  document.getElementById('socioPlan').value = "Plan Base";
-  document.getElementById('socioMonto').value = 45000;
+  poblarSelectPlanesSocio();
+  if(p.plan) document.getElementById('socioPlan').value = p.plan;
   document.getElementById('socioInicio').value = new Date().toISOString().slice(0,10);
   document.getElementById('socioEstado').value = "activo";
+  autocompletarMontoPlan();
   document.getElementById('modalSocio').classList.remove('hidden');
 }
 function copiarLinkInscripcion(){
@@ -952,13 +1063,21 @@ function guardarConfiguracion(){
    ===================================================================== */
 let planSeleccionado = null;
 function iniciarInscripcion(){
-  document.getElementById('grillaPlanes').innerHTML = PLANES.map(p=>`
-    <div class="plan-card" onclick="seleccionarPlan('${p.nombre}')" id="plan-${p.nombre.replace(/\s/g,'')}">
-      <h3>${p.nombre}</h3>
-      <div class="precio">${formatoMoneda(p.monto)}<span style="font-size:12px; color:var(--gris-txt)">/mes</span></div>
-      <div class="frec">${p.frecuencia}</div>
-    </div>
-  `).join('');
+  document.getElementById('grillaPlanes').innerHTML = `<p style="color:var(--gris-txt); text-align:center;">Cargando planes...</p>`;
+  db.collection('planes_blacks').where('uid','==',BLACKS_UID).get().then(snap=>{
+    let planes = snap.docs.map(d=>d.data());
+    if(!planes.length) planes = PLANES_DEFAULT; // por si todavía no se sembraron
+    planes.sort((a,b)=>(a.monto||0)-(b.monto||0));
+    document.getElementById('grillaPlanes').innerHTML = planes.map(p=>`
+      <div class="plan-card" onclick="seleccionarPlan('${p.nombre}')" id="plan-${p.nombre.replace(/\s/g,'')}">
+        <h3>${p.nombre}</h3>
+        <div class="precio">${formatoMoneda(p.monto)}<span style="font-size:12px; color:var(--gris-txt)">/mes</span></div>
+        <div class="frec">${p.frecuencia}</div>
+      </div>
+    `).join('');
+  }).catch(()=>{
+    document.getElementById('grillaPlanes').innerHTML = `<p style="color:var(--gris-txt); text-align:center;">No se pudieron cargar los planes. Recargá la página.</p>`;
+  });
 }
 function seleccionarPlan(nombre){
   planSeleccionado = nombre;
@@ -971,11 +1090,14 @@ function seleccionarPlan(nombre){
 function enviarInscripcion(){
   const nombre = document.getElementById('inscNombre').value.trim();
   const telefono = document.getElementById('inscTelefono').value.trim();
+  const actividad = document.getElementById('inscActividad').value;
   if(!nombre || !telefono){ toast("Completá tu nombre y teléfono","err"); return; }
   if(!planSeleccionado){ toast("Elegí un plan primero","err"); return; }
+  if(!actividad){ toast("Elegí qué actividad querés hacer","err"); return; }
   db.collection('prospectos_blacks').add({
     nombre, telefono,
-    actividadInteres: planSeleccionado,
+    plan: planSeleccionado,
+    actividad,
     contactado: false,
     fecha: firebase.firestore.FieldValue.serverTimestamp(),
     uid: BLACKS_UID
