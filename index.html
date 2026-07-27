@@ -312,7 +312,7 @@
     <section id="pantalla-planes" class="pantalla hidden">
       <div class="topbar"><h1>Planes</h1><button class="btn btn-primary" onclick="abrirModalPlan()">+ Nuevo plan</button></div>
       <div class="card">
-        <table><thead><tr><th>Nombre</th><th>Monto mensual</th><th>Frecuencia</th><th>Acciones</th></tr></thead>
+        <table><thead><tr><th>Nombre</th><th>Monto mensual</th><th>Frecuencia</th><th>Mercado Pago</th><th>Acciones</th></tr></thead>
         <tbody id="tablaPlanes"></tbody></table>
       </div>
     </section>
@@ -365,6 +365,7 @@
   <div class="form-insc hidden" id="formInscripcion">
     <h2 style="margin-bottom:16px;">Reservá tu lugar</h2>
     <div class="field"><label>Nombre y apellido</label><input id="inscNombre"></div>
+    <div class="field"><label>DNI</label><input id="inscDni" inputmode="numeric" placeholder="Sin puntos"></div>
     <div class="field"><label>Teléfono (WhatsApp)</label><input id="inscTelefono" placeholder="260 468 1584"></div>
     <div class="field"><label>Plan de interés</label><input id="inscPlan" disabled></div>
     <div class="field"><label>¿Qué actividad querés hacer?</label>
@@ -393,6 +394,7 @@
     <span class="modal-close" onclick="cerrarModal('modalSocio')">✕</span>
     <h2 id="tituloModalSocio">Nuevo socio</h2>
     <input type="hidden" id="socioId">
+    <input type="hidden" id="prospectoOrigenId">
     <div class="field"><label>Nombre completo</label><input id="socioNombre"></div>
     <div class="field"><label>DNI</label><input id="socioDni"></div>
     <div class="field"><label>Teléfono</label><input id="socioTelefono" placeholder="260 468 1584"></div>
@@ -416,6 +418,7 @@
     <div class="field"><label>Nombre del plan</label><input id="planNombre" placeholder="Ej: Plan Base"></div>
     <div class="field"><label>Monto mensual</label><input type="number" id="planMonto" placeholder="45000"></div>
     <div class="field"><label>Frecuencia</label><input id="planFrecuencia" placeholder="Ej: 2 a 3 veces por semana"></div>
+    <div class="field"><label>Link de suscripción (Mercado Pago)</label><input id="planLinkMP" placeholder="https://mpago.la/..."></div>
     <button class="btn btn-primary" style="width:100%" onclick="guardarPlan()">Guardar</button>
   </div>
 </div>
@@ -507,12 +510,22 @@ const GYM = {
 };
 
 const PLANES_DEFAULT = [
-  {nombre:"Plan Base", monto:45000, frecuencia:"2 a 3 veces por semana"},
-  {nombre:"Plan Pro", monto:50000, frecuencia:"4 a 5 veces por semana"},
-  {nombre:"Plan Específico Base", monto:47000, frecuencia:"2 a 3 veces por semana"},
-  {nombre:"Plan Específico Pro", monto:52000, frecuencia:"4 a 5 veces por semana"},
-  {nombre:"Entrenamiento Funcional", monto:45000, frecuencia:"2 a 3 veces por semana"}
+  {nombre:"Plan Base", monto:45000, frecuencia:"2 a 3 veces por semana", linkMP:"https://mpago.la/1ACzR7u"},
+  {nombre:"Plan Pro", monto:50000, frecuencia:"4 a 5 veces por semana", linkMP:"https://mpago.la/2ixCQ1Z"},
+  {nombre:"Plan Específico Base", monto:47000, frecuencia:"2 a 3 veces por semana", linkMP:"https://mpago.la/1rgYrLf"},
+  {nombre:"Plan Específico Pro", monto:52000, frecuencia:"4 a 5 veces por semana", linkMP:"https://mpago.la/1dGZKJT"},
+  {nombre:"Entrenamiento Funcional", monto:45000, frecuencia:"2 a 3 veces por semana", linkMP:"https://mpago.la/1VppwAF"}
 ];
+
+// Mapa de respaldo: si algún plan ya existía en Firestore sin link (creado antes
+// de esta actualización), se lo completamos una sola vez sin pisar ediciones futuras.
+const LINKS_MP_INICIALES = {
+  "Plan Base": "https://mpago.la/1ACzR7u",
+  "Plan Pro": "https://mpago.la/2ixCQ1Z",
+  "Plan Específico Base": "https://mpago.la/1rgYrLf",
+  "Plan Específico Pro": "https://mpago.la/1dGZKJT",
+  "Entrenamiento Funcional": "https://mpago.la/1VppwAF"
+};
 
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
@@ -640,6 +653,18 @@ function cargarDatosApp(){
       batch.commit().catch(e=> toast("No se pudieron crear los planes iniciales: "+e.message, "err"));
       return; // el propio commit va a disparar este mismo onSnapshot de nuevo, ya con datos
     }
+    // parche: si algún plan quedó sin link de Mercado Pago (creado antes de
+    // esta actualización), se lo completamos una sola vez sin tocar los que
+    // ya tengan uno cargado (para no pisar una edición manual futura)
+    const faltantes = cachePlanes.filter(p => !p.linkMP && LINKS_MP_INICIALES[p.nombre]);
+    if(faltantes.length){
+      const batch = db.batch();
+      faltantes.forEach(p=>{
+        batch.update(db.collection('planes_blacks').doc(p.id), {linkMP: LINKS_MP_INICIALES[p.nombre]});
+      });
+      batch.commit().catch(()=>{});
+      return; // el propio commit dispara este mismo onSnapshot de nuevo, ya completo
+    }
     renderPlanes(); poblarSelectPlanesSocio();
   });
   listenersActivos = [u1,u2,u3,u4,u5];
@@ -713,7 +738,10 @@ function renderSocios(){
       <td class="acciones">
         <button class="btn btn-ghost btn-sm" onclick="editarSocio('${s.id}')">Editar</button>
         <button class="btn btn-wsp btn-sm" onclick="enviarLinkTransferencia('${s.id}')">💬 Transferencia</button>
-        <button class="btn btn-danger btn-sm" onclick="eliminarSocio('${s.id}')">Baja</button>
+        ${s.estado==='activo'
+          ? `<button class="btn btn-danger btn-sm" onclick="eliminarSocio('${s.id}')">Baja</button>`
+          : `<button class="btn btn-danger btn-sm" onclick="eliminarSocioDefinitivo('${s.id}')">🗑️ Eliminar</button>`
+        }
       </td>
     </tr>
   `).join('') || `<tr><td colspan="6" style="color:var(--gris-txt)">No hay socios que coincidan.</td></tr>`;
@@ -730,6 +758,7 @@ function poblarSelectPlanesSocio(){
 function abrirModalSocio(){
   document.getElementById('tituloModalSocio').textContent = "Nuevo socio";
   document.getElementById('socioId').value = "";
+  document.getElementById('prospectoOrigenId').value = "";
   document.getElementById('socioNombre').value = "";
   document.getElementById('socioDni').value = "";
   document.getElementById('socioTelefono').value = "";
@@ -744,6 +773,7 @@ function editarSocio(id){
   if(!s) return;
   document.getElementById('tituloModalSocio').textContent = "Editar socio";
   document.getElementById('socioId').value = s.id;
+  document.getElementById('prospectoOrigenId').value = "";
   document.getElementById('socioNombre').value = s.nombre;
   document.getElementById('socioDni').value = s.dni||'';
   document.getElementById('socioTelefono').value = s.telefono||'';
@@ -761,6 +791,7 @@ function autocompletarMontoPlan(){
 }
 function guardarSocio(){
   const id = document.getElementById('socioId').value;
+  const prospectoOrigenId = document.getElementById('prospectoOrigenId').value;
   const nombre = document.getElementById('socioNombre').value.trim();
   if(!nombre){ toast("Falta el nombre del socio","err"); return; }
   const data = {
@@ -777,11 +808,27 @@ function guardarSocio(){
   ref.set(data, {merge:true}).then(()=>{
     toast("Socio guardado", "ok");
     cerrarModal('modalSocio');
+    if(prospectoOrigenId){
+      db.collection('prospectos_blacks').doc(prospectoOrigenId).delete().catch(()=>{});
+    }
   }).catch(e=> toast("Error al guardar: "+e.message, "err"));
 }
 function eliminarSocio(id){
   if(!confirm("¿Dar de baja a este socio? Esta acción no borra su historial de pagos.")) return;
   db.collection('socios_blacks').doc(id).update({estado:'inactivo'}).then(()=> toast("Socio dado de baja","ok"));
+}
+function eliminarSocioDefinitivo(id){
+  const s = cacheSocios.find(x=>x.id===id);
+  const pagosDelSocio = cachePagos.filter(p=>p.socioId===id);
+  const aviso = pagosDelSocio.length
+    ? `¿Eliminar definitivamente a ${s?s.nombre:'este socio'}? Esta acción no se puede deshacer. También se van a borrar sus ${pagosDelSocio.length} pago(s) registrados.`
+    : `¿Eliminar definitivamente a ${s?s.nombre:'este socio'}? Esta acción no se puede deshacer.`;
+  if(!confirm(aviso)) return;
+  const batch = db.batch();
+  batch.delete(db.collection('socios_blacks').doc(id));
+  pagosDelSocio.forEach(p=> batch.delete(db.collection('pagos_blacks').doc(p.id)));
+  batch.commit().then(()=> toast("Socio y su historial de pagos eliminados","ok"))
+    .catch(e=> toast("Error al eliminar: "+e.message, "err"));
 }
 function enviarLinkTransferencia(id){
   const s = cacheSocios.find(x=>x.id===id);
@@ -866,7 +913,12 @@ function enviarComprobante(socio, mes, monto){
 function recordatorioCuota(socioId){
   const s = cacheSocios.find(x=>x.id===socioId);
   if(!s.telefono){ toast("Este socio no tiene teléfono cargado","err"); return; }
-  const msg = `Hola ${s.nombre.split(' ')[0]}! 👋 Te escribimos de ${GYM.nombre} para recordarte que tenés la cuota de este mes pendiente (${formatoMoneda(s.monto)}). Cualquier consulta, estamos para ayudarte. ¡Nos vemos en el gym! 💪`;
+  const plan = cachePlanes.find(p=>p.nombre===s.plan);
+  let msg = `Hola ${s.nombre.split(' ')[0]}! 👋 Te escribimos de ${GYM.nombre} para recordarte que tenés la cuota de este mes pendiente (${formatoMoneda(s.monto)}).\n\nLa podés abonar de dos formas:\n\n🏦 Transferencia:\nAlias: ${GYM.alias}\nCVU: ${GYM.cvu}\nTitular: ${GYM.titular}`;
+  if(plan && plan.linkMP){
+    msg += `\n\n💳 O con este link de Mercado Pago:\n${plan.linkMP}`;
+  }
+  msg += `\n\nCualquier consulta, estamos para ayudarte. ¡Nos vemos en el gym! 💪`;
   abrirWhatsapp(s.telefono, msg);
 }
 function enviarRecordatoriosMasivos(){
@@ -949,12 +1001,13 @@ function renderPlanes(){
       <td>${p.nombre}</td>
       <td class="mono">${formatoMoneda(p.monto)}</td>
       <td>${p.frecuencia||'-'}</td>
+      <td>${p.linkMP ? `<a href="${p.linkMP}" target="_blank" style="color:var(--amarillo)">Ver link</a>` : '<span style="color:var(--gris-txt)">Sin link</span>'}</td>
       <td class="acciones">
         <button class="btn btn-ghost btn-sm" onclick="editarPlan('${p.id}')">Editar</button>
         <button class="btn btn-danger btn-sm" onclick="eliminarPlan('${p.id}')">Eliminar</button>
       </td>
     </tr>
-  `).join('') || `<tr><td colspan="4" style="color:var(--gris-txt)">Todavía no hay planes cargados.</td></tr>`;
+  `).join('') || `<tr><td colspan="5" style="color:var(--gris-txt)">Todavía no hay planes cargados.</td></tr>`;
 }
 function abrirModalPlan(){
   document.getElementById('tituloModalPlan').textContent = "Nuevo plan";
@@ -962,6 +1015,7 @@ function abrirModalPlan(){
   document.getElementById('planNombre').value = "";
   document.getElementById('planMonto').value = "";
   document.getElementById('planFrecuencia').value = "";
+  document.getElementById('planLinkMP').value = "";
   document.getElementById('modalPlan').classList.remove('hidden');
 }
 function editarPlan(id){
@@ -972,6 +1026,7 @@ function editarPlan(id){
   document.getElementById('planNombre').value = p.nombre;
   document.getElementById('planMonto').value = p.monto;
   document.getElementById('planFrecuencia').value = p.frecuencia||'';
+  document.getElementById('planLinkMP').value = p.linkMP||'';
   document.getElementById('modalPlan').classList.remove('hidden');
 }
 function guardarPlan(){
@@ -983,6 +1038,7 @@ function guardarPlan(){
     nombre,
     monto,
     frecuencia: document.getElementById('planFrecuencia').value.trim(),
+    linkMP: document.getElementById('planLinkMP').value.trim(),
     uid: auth.currentUser.uid
   };
   const ref = id ? db.collection('planes_blacks').doc(id) : db.collection('planes_blacks').doc();
@@ -1027,9 +1083,10 @@ function convertirEnSocio(id){
   const p = cacheProspectos.find(x=>x.id===id);
   document.getElementById('tituloModalSocio').textContent = "Nuevo socio";
   document.getElementById('socioId').value = "";
+  document.getElementById('prospectoOrigenId').value = id;
   document.getElementById('socioNombre').value = p.nombre;
   document.getElementById('socioTelefono').value = p.telefono;
-  document.getElementById('socioDni').value = "";
+  document.getElementById('socioDni').value = p.dni || "";
   poblarSelectPlanesSocio();
   if(p.plan) document.getElementById('socioPlan').value = p.plan;
   document.getElementById('socioInicio').value = new Date().toISOString().slice(0,10);
@@ -1096,13 +1153,15 @@ function seleccionarPlan(nombre){
 }
 function enviarInscripcion(){
   const nombre = document.getElementById('inscNombre').value.trim();
+  const dni = document.getElementById('inscDni').value.trim();
   const telefono = document.getElementById('inscTelefono').value.trim();
   const actividad = document.getElementById('inscActividad').value;
   if(!nombre || !telefono){ toast("Completá tu nombre y teléfono","err"); return; }
+  if(!dni){ toast("Completá tu número de documento","err"); return; }
   if(!planSeleccionado){ toast("Elegí un plan primero","err"); return; }
   if(!actividad){ toast("Elegí qué actividad querés hacer","err"); return; }
   db.collection('prospectos_blacks').add({
-    nombre, telefono,
+    nombre, dni, telefono,
     plan: planSeleccionado,
     actividad,
     contactado: false,
