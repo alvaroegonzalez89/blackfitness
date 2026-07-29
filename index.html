@@ -839,7 +839,7 @@ function enviarLinkTransferencia(id){
   const plan = cachePlanes.find(p=>p.nombre===s.plan);
   let msg = `Hola ${s.nombre.split(' ')[0]}! 💪 Te paso los datos para transferir tu cuota de ${GYM.nombre} (${formatoMoneda(s.monto)}):\n\nAlias: ${GYM.alias}\nCVU: ${GYM.cvu}\nTitular: ${GYM.titular}`;
   if(plan && plan.linkMP){
-    msg += `\n\nO si preferís, con este link de Mercado Pago:\n${plan.linkMP}`;
+    msg += `\n\nSi preferís, también podés suscribirte para efectuar los futuros pagos de manera sencilla mediante débito automático con tarjeta de crédito o débito:\n${plan.linkMP}\n\n⚠️ Importante: si te suscribís, el primer débito recién se hace a los 30 días de darte de alta. Por eso esta primera cuota la tenés que abonar sí o sí por transferencia o efectivo, y a partir del segundo mes ya te lo cobra solo la suscripción.`;
   }
   msg += `\n\nCualquier duda me escribís por acá. ¡Gracias!`;
   abrirWhatsapp(s.telefono, msg);
@@ -924,7 +924,7 @@ function recordatorioCuota(socioId){
   const plan = cachePlanes.find(p=>p.nombre===s.plan);
   let msg = `Hola ${s.nombre.split(' ')[0]}! 👋 Te escribimos de ${GYM.nombre} para recordarte que tenés la cuota de este mes pendiente (${formatoMoneda(s.monto)}).\n\nLa podés abonar de dos formas:\n\n🏦 Transferencia:\nAlias: ${GYM.alias}\nCVU: ${GYM.cvu}\nTitular: ${GYM.titular}`;
   if(plan && plan.linkMP){
-    msg += `\n\n💳 O con este link de Mercado Pago:\n${plan.linkMP}`;
+    msg += `\n\n💳 O suscribiéndote para los próximos pagos con débito automático:\n${plan.linkMP}\n\n⚠️ Importante: si te suscribís, el primer débito recién se hace a los 30 días de darte de alta. Por eso esta primera cuota la tenés que abonar sí o sí por transferencia o efectivo, y a partir del segundo mes ya te lo cobra solo la suscripción.`;
   }
   msg += `\n\nCualquier consulta, estamos para ayudarte. ¡Nos vemos en el gym! 💪`;
   abrirWhatsapp(s.telefono, msg);
